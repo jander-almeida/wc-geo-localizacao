@@ -15,13 +15,14 @@ function googleMapsStart(){ ?>
     
     <?php
     if( !is_cart() || !is_checkout() || !is_product() ){
-			// $wcfm_marketplace_options = get_option('wcfm_marketplace_options');
-			// $apiKey_googleMaps = isset($wcfm_marketplace_options['wcfm_google_map_api']) && !empty($wcfm_marketplace_options['wcfm_google_map_api'])? sanitize_text_field($wcfm_marketplace_options['wcfm_google_map_api']) : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
+//             $wcfm_marketplace_options = get_option('wcfm_marketplace_options');
+//             $apiKey_googleMaps = isset($wcfm_marketplace_options['wcfm_google_map_api']) && !empty($wcfm_marketplace_options['wcfm_google_map_api'])? sanitize_text_field($wcfm_marketplace_options['wcfm_google_map_api']) : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
             
-			$dataSets = get_option('settings_price_by_km');        
-			$apiKey_googleMaps = array_key_exists( 'dsp_google_apikey', $dataSets) && !empty($dataSets['dsp_google_apikey']) ? $dataSets['dsp_google_apikey'] : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
+		            $dataSets = get_option('settings_price_by_km');
             
-			$coord = getCoordinate(); //Obter coordenadas do usuário atual ou do server pré-configurado
+            $apiKey_googleMaps = array_key_exists( 'dsp_google_apikey', $dataSets) && !empty($dataSets['dsp_google_apikey']) ? $dataSets['dsp_google_apikey'] : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
+		
+            $coord = getCoordinate(); //Obter coordenadas do usuário atual ou do server pré-configurado
             $coord_lat = isset($coord['lat']) ? trim(strval($coord['lat']) ) : '';
             $coord_lon = isset($coord['lon']) ? trim(strval($coord['lon']) ) : '';
             
@@ -29,13 +30,26 @@ function googleMapsStart(){ ?>
         
         <script src="https://maps.googleapis.com/maps/api/js?key=<?php _e($apiKey_googleMaps)?>&libraries=places&region=in"></script>
         <script type="text/javascript">
+			function isURL(str) {
+				var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+				'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|'+ // domain name
+				'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+				'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+				'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+				'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+				return pattern.test(str);
+			}
+			function getOnlyCep(str){
+				var str = "Av. Curua-Una - São José Operário, Santarém - PA, 68020-650, Brasil";
+				var str = str.match(/, [0-9](.*?)[0-9]+,/);
+				return str[0].replace(/\.|\-/g, '').replaceAll(',', '').replaceAll(' ', '') ;
+			}
         		// VARIAVEIS GLOBAIS DO MAP
         		var input;
         		var map;
         		var b;
         		var directionsDisplay; // Instanciaremos ele mais tarde, que será o nosso google.maps.DirectionsRenderer
         		// SETAR AS COORDANADAS PADRÃO CASO NÃO AS TENHAMOS
-        		
         		
         		var pscLat = "<?php _e($coord_lat)?>";
         		var pscLon = "<?php _e($coord_lon)?>";
@@ -72,11 +86,17 @@ function googleMapsStart(){ ?>
         		        return;
         		    }
         		    fetch("https://maps.googleapis.com/maps/api/geocode/json?address=" + address + '&key=<?php _e($apiKey_googleMaps)?>').then(response => response.json()).then(data => {
-        		        console.log(data);
-        		        
-        		        const latitude = data.results[0].geometry.location.lat;
-            		    const longitude = data.results[0].geometry.location.lng;
-        		        
+        		        console.log('inData: ', data);
+        		        const cepOrigem	= data.status == 'OK' ? getOnlyCep(data.results[0].formatted_address) : false;
+        		        const latitude	= data.status == 'OK' ? data.results[0].geometry.location.lat : false;
+            		    const longitude	= data.status == 'OK' ? data.results[0].geometry.location.lng : false;
+        		        console.log('CEP Origem: ', cepOrigem);
+						
+						if( !latitude || !longitude ){
+							b.close();
+							alert('Sem lojas encontradas perto de você');
+							return;
+						}
         		      //  try{
 
             		  //      console.log({
@@ -158,10 +178,10 @@ function googleMapsStart(){ ?>
                                     
                                     fetch(`${urlDomain}/wp-json/wp/v2/aproximated/?lat=${latitude}&lon=${longitude}&cep=${zip_code}`, {mode: "no-cors"});
                                 });
-        		            
-        		            if (idLojista != 0) {
+        		            if( getOnlyCep() )
+        		            if ( data.status == 'OK') {
         		                
-        		                location.href = url2redirect; //Redirecionar para a loja mais próxima
+        		                location.href = urlDomain; //Redirecionar para a loja mais próxima
         		              //  b.close();
         		              //  var c = jQuery.confirm({
         		              //      title: 'ENCONTRAMOS!',
@@ -176,7 +196,7 @@ function googleMapsStart(){ ?>
         		              //          }
         		              //      }
         		              //  });
-        		            } else {
+        		            } else if ( data.status == 'ZERO_RESULTS'){
         		                b.close();
         		                var c = jQuery.confirm({
         		                    title: 'NÃO LOCALIZADO!',
@@ -273,6 +293,7 @@ function googleMapsStart(){ ?>
                 }
             });
         });
+
         </script>
         <?php
     }

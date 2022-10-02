@@ -52,62 +52,36 @@ class storeAproximated {
      * @return Object
     */
     public function dsp_run_get_location($request) {
-       $lat = trim($request['lat']);
-       $lon = trim($request['lon']);
-       $cep = trim($request['cep']);
-       $cep = str_replace( "-", "", $cep);
-       $cep = str_replace( ".", "", $cep);
-       $cep = (int) filter_var($cep, FILTER_SANITIZE_NUMBER_INT);
+        $lat = trim($request['lat']);
+        $lon = trim($request['lon']);
+        $cep = trim($request['cep']);
+        $cep = $this->formatterCep($cep);
+
        $current_site = site_url('/', 'https');
        
         $a = 0;
         $lojistas = [];
-           
-       $is_multisite = is_multisite();
-       if( !$is_multisite ){
-           $url_stores = get_option('wcfm_store_url', true);
-           
-    		$args = array(
-    		    'role'  => 'wcfm_vendor'
-            );
-    		
-            $user_query = new WP_User_Query( $args );
-            $lojas = $user_query->get_results();
-            $total = count($lojas);
-            
-            if( $total > 0){
-                foreach($lojas as $loja ){
-                    $slug_vendor = $loja->user_nicename;
-                    $lojistas[$a]["is_multisite"]   = is_multisite();
-                    $lojistas[$a]["nome_lojista"]   = get_user_meta( $loja->ID, 'wcfmmp_store_name', true);
-                    $lojistas[$a]["id"]             = $loja->ID;
-                    $lojistas[$a]["lat"]            = trim( get_user_meta( $loja->ID, '_wcfm_store_lat', true) );
-                    $lojistas[$a]["lon"]            = trim( get_user_meta( $loja->ID, '_wcfm_store_lng', true) );
-                    $lojistas[$a]["distancia"]      = $this->haversineGreatCircleDistance($lat, $lon, $lojistas[$a]["lat"], $lojistas[$a]["lon"]);
-                    $lojistas[$a]["url"]            = site_url("$url_stores/$slug_vendor/");
+    
+        $args =  array(
+            'post_type'     => 'lojistas',
+            'post_status'   => 'publish',
+            'fields'        => 'ids',
+        );
+        $query = new WP_Query( $args );
+        $total = $query->post_count;
 
-                    $a++;
-                }
+        if( $total > 0){
+            foreach($query->posts as $id ){
+                $site_list = get_post_meta($id);
+                $lojistas[$a]["id"]             = $id;
+                $lojistas[$a]["lat"]            = $site_list['dsp_latitude'][0];
+                $lojistas[$a]["lon"]            = $site_list['dsp_longitude'][0];
+                $lojistas[$a]["distancia"]      = $this->haversineGreatCircleDistance($lat, $lon, $lojistas[$a]["lat"], $lojistas[$a]["lon"]);
+                $lojistas[$a]["url"]            = site_url($site['path']);
+                $lojistas[$a]['cep']            = $this->formatterCep( $site_list['dsp_cep'][0]);
+                $lojistas[$a]["domain"]         = $site_list['dsp_website'][0];
+                $a++;
             }
-            
-        } else {
-            $sites = wp_get_sites( $args );
-            $total = count($sites);
-            if( $sites > 0){
-                foreach($sites as $site ){
-                    $slug_vendor = $site->user_nicename;
-                    $lojistas[$a]["is_multisite"]   = is_multisite();
-                    $lojistas[$a]["id"]             = $site['blog_id'];
-                    $lojistas[$a]["lat"]            = "";
-                    $lojistas[$a]["lon"]            = "";
-                    $lojistas[$a]["distancia"]      = $this->haversineGreatCircleDistance($lat, $lon, $lojistas[$a]["lat"], $lojistas[$a]["lon"]);
-                    $lojistas[$a]["url"]            = site_url($site['path']);
-                    // $lojistas[$a]["domain"]         = getDomainbyUrl($lojistas[$a]["url"]);
-                    // $lojistas[$a]["test"]            = $site;
-                    $a++;
-                }
-            }
-            
         }
         
         $data = array(
@@ -160,6 +134,12 @@ class storeAproximated {
 	    }
 	    return "URL Invalid";
 	}
+    public function formatterCep($cep){
+        $cep = str_replace( "-", "", $cep);
+        $cep = str_replace( ".", "", $cep);
+        $cep = (int) filter_var($cep, FILTER_SANITIZE_NUMBER_INT);
+        return $cep;
+    }
 
 }
 
