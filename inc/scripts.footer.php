@@ -15,8 +15,8 @@ function googleMapsStart(){ ?>
     
     <?php
     if( !is_cart() || !is_checkout() || !is_product() ){
-			$wcfm_marketplace_options = get_option('wcfm_marketplace_options');
-			$apiKey_googleMaps = isset($wcfm_marketplace_options['wcfm_google_map_api']) && !empty($wcfm_marketplace_options['wcfm_google_map_api'])? sanitize_text_field($wcfm_marketplace_options['wcfm_google_map_api']) : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
+			// $wcfm_marketplace_options = get_option('wcfm_marketplace_options');
+			// $apiKey_googleMaps = isset($wcfm_marketplace_options['wcfm_google_map_api']) && !empty($wcfm_marketplace_options['wcfm_google_map_api'])? sanitize_text_field($wcfm_marketplace_options['wcfm_google_map_api']) : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
             
 			$dataSets = get_option('settings_price_by_km');        
 			$apiKey_googleMaps = array_key_exists( 'dsp_google_apikey', $dataSets) && !empty($dataSets['dsp_google_apikey']) ? $dataSets['dsp_google_apikey'] : 'INSERT_YOUR_API_KEY_GOOGLE_MAPS_HERE';
