@@ -38,8 +38,13 @@ class storeAproximated {
                     'description'   => 'Adicone o CEP do cliente',
                     'type'          => 'string',
                     'require'       => true
+                ),
+				'redirect' => array(
+                    'description'   => 'URL que será direcionado',
+                    'type'          => 'string',
+                    'require'       => false
                 )
-            ),
+			),
         ));
     }
     
@@ -56,10 +61,12 @@ class storeAproximated {
         $lon = trim($request['lon']);
         $cep = trim($request['cep']);
         $cep = $this->formatterCep($cep);
-
+		$site = trim($request['redirect']);  //URL do site para redirecionar
+		setcookie("c_lat", $lat, time()+3600, '/' );
+		setcookie("c_lon", $lon, time()+3600, '/' );
+		setcookie("c_cep", $cep, time()+3600, '/' );
        $current_site = site_url('/', 'https');
-       
-        $a = 0;
+		$a = 0;
         $lojistas = [];
     
         $args =  array(
@@ -90,9 +97,14 @@ class storeAproximated {
             'current'       => $current_site,
             'lojistas'      => $lojistas,
             "total"         => $total,
+			"cookies"		=> $_COOKIES,
         );
         wp_reset_query();
-        wp_send_json($data, 200); 
+        if( filter_var($site, FILTER_VALIDATE_URL) ){
+			header("Location: $site");
+		} else {
+			wp_send_json($data, 200); 
+		}
     }
 	
 	/**
@@ -140,8 +152,28 @@ class storeAproximated {
         $cep = (int) filter_var($cep, FILTER_SANITIZE_NUMBER_INT);
         return $cep;
     }
-
-}
+    /**
+     * Processar e listar lojas para obter as coordenadas e obter a loja mais perto
+     * @param Object $request
+     * @return Object
+    */
+    public function dsp_run_register_cookies($request) {
+        $body = $request->get_body_params();
+        
+        $current_site = site_url('/', 'https');
+        
+        if( count($body) && !empty($body) || $body !== null ){
+            foreach( $body as $key => $val ){
+                setcookie("c_$key", $val, time()+3600, '/' );
+            }
+        }
+        
+        $data = array(
+            'registers_cookies' => $body,
+        );
+		return $body;
+        //wp_send_json($data, 200); 
+    }}
 
 add_action('rest_api_init', function () {
     new storeAproximated; // Rodar,
