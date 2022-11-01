@@ -87,14 +87,18 @@ function googleMapsStart(){ ?>
         		    }
         		    fetch("https://maps.googleapis.com/maps/api/geocode/json?address=" + address + '&key=<?php _e($apiKey_googleMaps)?>').then(response => response.json()).then(data => {
         		        console.log('inData: ', data);
-        		        const cepOrigem	= data.status == 'OK' ? getOnlyCep(data.results[0].formatted_address) : false;
+        		      //  const cepOrigem	= data.status == 'OK' ? getOnlyCep(data.results[0].formatted_address) : false;
+        		        
+        		      //  const cepOrigem	= data.status == 'OK' ? getOnlyCep(localStorage.getItem('billing_postcode')) : false;
+        		      
+        		        const cepOrigem	= data.status == 'OK' ? jQuery("#dsp-filtra").val() : false;
         		        const latitude	= data.status == 'OK' ? data.results[0].geometry.location.lat : false;
             		    const longitude	= data.status == 'OK' ? data.results[0].geometry.location.lng : false;
         		        console.log('CEP Origem: ', cepOrigem);
 						
 						if( !latitude || !longitude ){
 							b.close();
-							alert('Sem lojas encontradas perto de você');
+							alert('No momento não encontramos nenhuma loja perto de você. \nPor favor entre em contato em nossa televendas através do fone 0800 500 2223 para outros métodos de compra.');
 							return;
 						}
         		      //  try{
@@ -128,8 +132,8 @@ function googleMapsStart(){ ?>
         		      //      b.close();
         		      //      return "Latitude e/ou Longitude não localizada";
         		      //  }
-        		        console.log(`<?php _e(site_url('wp-json/wp/v2/aproximated/'))?>?lat=${latitude}&lon=${longitude}&cep=${000000}`);
-        		        fetch(`<?php _e(site_url('wp-json/wp/v2/aproximated/'))?>?lat=${latitude}&lon=${longitude}&cep=00000000`, {mode: "no-cors"}).then(ret => ret.json() ).then( ret => {
+        		        console.log(`<?php _e(site_url('wp-json/wp/v2/aproximated/'))?>?lat=${latitude}&lon=${longitude}&cep=${cepOrigem}`);
+        		        fetch(`<?php _e(site_url('wp-json/wp/v2/aproximated/'))?>?lat=${latitude}&lon=${longitude}&cep=${cepOrigem}`, {mode: "no-cors"}).then(ret => ret.json() ).then( ret => {
         		            // Sucesso
         		            console.log('DEPURAR: ', ret,);
         		            // VAMOS PERCORRER TODOS OS LOJISTAS PARA VER QUAL É O MAIS PRÓXIMO
@@ -138,6 +142,7 @@ function googleMapsStart(){ ?>
         		            if(ret.lojistas.length > 0 ){
         		                ret.lojistas.forEach((localet, index)=>{
         		                    console.log(localet);
+
         		                    if (localet.distancia < menorDistancia) {
             		                    menorDistancia = localet.distancia;
             		                    idLojista = localet.id;
@@ -175,13 +180,15 @@ function googleMapsStart(){ ?>
                                     if( item.types.includes('route') ){
                                         localStorage.setItem( "billing_address_1", item.short_name );
                                     }
-                                    
-                                    fetch(`${urlDomain}/wp-json/wp/v2/aproximated/?lat=${latitude}&lon=${longitude}&cep=${zip_code}`, {mode: "no-cors"});
                                 });
+                                
         		            if( getOnlyCep() )
         		            if ( data.status == 'OK') {
-        		                
-        		                location.href = urlDomain; //Redirecionar para a loja mais próxima
+        		            	fetch (`${urlDomain}/wp-json/wp/v2/aproximated/?lat=${latitude}&lon=${longitude}&cep=${cepOrigem}&redirect=${urlDomain}`, {mode: 'no-cors'}).then(ret => ret.text() ).then( ret => {
+    console.log(ret);
+									location.href = `${urlDomain}/wp-json/wp/v2/aproximated/?lat=${latitude}&lon=${longitude}&cep=${cepOrigem}&redirect=${urlDomain}`; //Redirecionar para a loja mais próxima
+});
+         		                
         		              //  b.close();
         		              //  var c = jQuery.confirm({
         		              //      title: 'ENCONTRAMOS!',
@@ -262,7 +269,7 @@ function googleMapsStart(){ ?>
     }
     
     if( is_checkout() || is_cart() ){ ?>
-        <script>
+        <script> /*
         jQuery(document).ready(function(){
             var billing_datas = [
                 "billing_country",
@@ -293,7 +300,7 @@ function googleMapsStart(){ ?>
                 }
             });
         });
-
+*/
         </script>
         <?php
     }

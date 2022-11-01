@@ -319,6 +319,6 @@ add_action('admin_footer', function(){
         }
     }
     print_r($settings_jos);
-    echo "</pre>";
+    //echo "</pre>";
     
 });
